@@ -5,7 +5,7 @@
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/YOUR_GITHUB_USER_NAME/postmsg-server",
+  "repository": "https://github.com/klouskingsley/postmsg-server",
   "license": "MIT",
   "keywords": [],
   "scripts": {
@@ -41,7 +41,9 @@
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {},
+  "dependencies": {
+    "eventemitter3": "^4.0.7"
+  },
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
