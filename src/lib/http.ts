@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import {serverMsgTypeKey, ServerMessageHttpRequest, ServerMsgType, ErrorType, ServerMessageHttpResponse, ServerMessage, isServerMessage} from './const'
-import {uniqueId} from './util'
+import {uniqueId, sleep} from './util'
 
 
 type HandlerFn = (param: any) => Promise<any>
@@ -155,6 +155,18 @@ export function createHttpClient({name, serverWindow}: {name: string, serverWind
       state.event.on(ServerMsgType.http_pong, resolve)
     })
   }
+  const pingUntilPong = async function() {
+    let receivedPong = false
+    for (;;) {
+      ping().then(() => {
+        receivedPong = true
+      })
+      if (receivedPong) {
+        break;
+      }
+      await sleep(50);
+    }
+  }
 
   const request = function (method: string, option?: RequestOption) {
     if (!method || typeof method !== 'string') {
@@ -181,8 +193,8 @@ export function createHttpClient({name, serverWindow}: {name: string, serverWind
           reject(new Error(ErrorType.timeout))
         }, timeout)
       }
-      // 先进行 ping, ping 通后再进行 request
-      ping().then(() => {
+      // 先进行 ping, todo 可能需要不断的ping(pingUntilPong), ping 通后再进行 request
+      pingUntilPong().then(() => {
         if (isFail) {
           return
         }

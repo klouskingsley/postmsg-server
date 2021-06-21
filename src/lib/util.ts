@@ -5,3 +5,5 @@ export function uniqueId () {
   const random = Math.random()
   return `${now}-${random}`
 }
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
