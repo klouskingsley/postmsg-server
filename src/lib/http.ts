@@ -11,7 +11,7 @@ interface ServerState {
   methodHandler: Map<string, HandlerFn>
 }
 
-export function createHttpServer({name}: {name: string}) {
+export function createHttpServer<ServerHandler>({name}: {name: string}) {
   if (!name || typeof name !== 'string') {
     throw new Error(`createHttpServer(option): option.name require a non-empty string`)
   }
@@ -98,12 +98,13 @@ export function createHttpServer({name}: {name: string}) {
     }
   };
 
-  const on = function (method: string, callback: (param?: any) => Promise<any>) {
-    const has = state.methodHandler.has(method)
+  const on = function<Method extends keyof ServerHandler> (method: Method, callback: ServerHandler[Method]) {
+    const has = state.methodHandler.has(method as string)
     if (has) {
       console.warn(`server.on: ${method}'s previous handler will be override`)
     }
-    state.methodHandler.set(method, callback)
+    // (param?: any) => Promise<any>
+    state.methodHandler.set(method as string, callback as any)
   }
 
   return {
