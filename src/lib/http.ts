@@ -3,7 +3,7 @@ import {serverMsgTypeKey, ServerMessageHttpRequest, ServerMsgType, ErrorType, Se
 import {uniqueId, sleep} from './util'
 
 
-type HandlerFn = (param: any) => Promise<any>
+type HandlerFn = (...param: any) => Promise<any>
 
 interface ServerState {
   clientList: Window[]
@@ -11,7 +11,17 @@ interface ServerState {
   methodHandler: Map<string, HandlerFn>
 }
 
-export function createHttpServer<ServerHandler>({name}: {name: string}) {
+// interface HandleFnParam<T> {
+//   param: T
+//   origin: string
+//   method: string
+//   requestId: string
+//   source: Window
+// }
+
+type HandleFnParam<T, Rt> = (param: T, origin: string, source: Window) => Rt
+
+export function createHttpServer<ServerHandler extends Record<keyof ServerHandler, (...args: any) => any>>({name}: {name: string}) {
   if (!name || typeof name !== 'string') {
     throw new Error(`createHttpServer(option): option.name require a non-empty string`)
   }
@@ -46,7 +56,7 @@ export function createHttpServer<ServerHandler>({name}: {name: string}) {
     // 得到处理结果
     let res: {response: any, error: any} = {response: '', error: ''}
     try {
-      res.response = await fn(param)
+      res.response = await fn(param,origin,source)
     } catch (err) {
       res.error = err.message
     }
@@ -98,7 +108,7 @@ export function createHttpServer<ServerHandler>({name}: {name: string}) {
     }
   };
 
-  const on = function<Method extends keyof ServerHandler> (method: Method, callback: ServerHandler[Method]) {
+  const on = function<Method extends keyof ServerHandler> (method: Method, callback: HandleFnParam<Parameters<ServerHandler[Method]>[0], ReturnType<ServerHandler[Method]>>) {
     const has = state.methodHandler.has(method as string)
     if (has) {
       console.warn(`server.on: ${method}'s previous handler will be override`)
@@ -167,8 +177,8 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
   const request = function<Method extends keyof ServerHandler> (option: {
     timeout?: number;
     method: Method;
-    param: Parameters<ServerHandler[Method]>[0];
-  }) {
+    param?: Parameters<ServerHandler[Method]>[0];
+  }): ReturnType<ServerHandler[Method]> {
     const method = {option}
     if (!method || typeof method !== 'string') {
       throw new Error('httpClient.request(method, param): method is required')
@@ -209,7 +219,7 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
           }
         })
       })
-    })
+    }) as any
   }
 
   return {
