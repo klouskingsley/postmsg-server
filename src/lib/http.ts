@@ -179,7 +179,7 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
     method: Method;
     param?: Parameters<ServerHandler[Method]>[0];
   }): ReturnType<ServerHandler[Method]> {
-    const method = {option}
+    const {method} = option
     if (!method || typeof method !== 'string') {
       throw new Error('httpClient.request(method, param): method is required')
     }
