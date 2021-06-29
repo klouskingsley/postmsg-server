@@ -118,12 +118,7 @@ interface ClientState {
   event: EventEmitter
 }
 
-interface RequestOption {
-  timeout?: number
-  param?: any
-}
-
-export function createHttpClient({name, serverWindow}: {name: string, serverWindow: any}) {
+export function createHttpClient<ServerHandler extends Record<keyof ServerHandler, (...args: any) => any>>({name, serverWindow}: {name: string, serverWindow: any}) {
 
   if (!name || typeof name !== 'string') {
     throw new Error('createHttpClient(option): option.name require a non-empty string')
@@ -169,11 +164,15 @@ export function createHttpClient({name, serverWindow}: {name: string, serverWind
     }
   }
 
-  const request = function (method: string, option?: RequestOption) {
+  const request = function<Method extends keyof ServerHandler> (option: {
+    timeout?: number;
+    method: Method;
+    param: Parameters<ServerHandler[Method]>[0];
+  }) {
+    const method = {option}
     if (!method || typeof method !== 'string') {
       throw new Error('httpClient.request(method, param): method is required')
     }
-    option = option || {}
     const timeout = typeof option.timeout === 'number' ? option.timeout : 3000
     const requestId = uniqueId()
     const msg: ServerMessageHttpRequest = {
