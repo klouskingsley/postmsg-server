@@ -8,3 +8,4 @@ coverage
 yarn.lock
 .DS_Store
 *.tsbuildinfo
+build/browserify
