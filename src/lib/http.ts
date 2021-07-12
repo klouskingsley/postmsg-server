@@ -1,4 +1,5 @@
-import * as EventEmitter from 'eventemitter3'
+// import EventEmitter, {EventEmitter, EventEmitterStatic} from 'eventemitter3'
+import { EventEmitter} from 'events';
 import {serverMsgTypeKey, ServerMessageHttpRequest, ServerMsgType, ErrorType, ServerMessageHttpResponse, ServerMessage, isServerMessage} from './const'
 import {uniqueId, sleep} from './util'
 
@@ -183,7 +184,7 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
     if (!method || typeof method !== 'string') {
       throw new Error('httpClient.request(method, param): method is required')
     }
-    const timeout = typeof option.timeout === 'number' ? option.timeout : 3000
+    const timeout = typeof option.timeout === 'number' ? option.timeout : 0
     const requestId = uniqueId()
     const msg: ServerMessageHttpRequest = {
       [serverMsgTypeKey]: ServerMsgType.http_request,

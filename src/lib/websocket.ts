@@ -1,5 +1,6 @@
 
-import * as EventEmitter from 'eventemitter3'
+// import * as EventEmitter from 'eventemitter3'
+import {EventEmitter} from 'events'
 import { ServerMessageWebsocketMessage, ServerMsgType, serverMsgTypeKey, isServerMessage } from './const'
 
 interface WebsocketState {
