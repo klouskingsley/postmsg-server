@@ -1,6 +1,6 @@
 // import EventEmitter, {EventEmitter, EventEmitterStatic} from 'eventemitter3'
 import { EventEmitter} from 'events';
-import {serverMsgTypeKey, ServerMessageHttpRequest, ServerMsgType, ErrorType, ServerMessageHttpResponse, ServerMessage, isServerMessage} from './const'
+import {serverMsgTypeKey, ServerMessageHttpRequest, ServerMsgType, ErrorType, ServerMessageHttpResponse, ServerMessage, isServerMessage, ServerMessagePing, getHttpRequestEventKey} from './const'
 import {uniqueId, sleep} from './util'
 
 
@@ -66,7 +66,8 @@ export function createHttpServer<ServerHandler extends Record<keyof ServerHandle
     const msg: ServerMessageHttpResponse = {
       ...res,
       [serverMsgTypeKey]: ServerMsgType.http_response,
-      requestId
+      requestId,
+      serverName: state.name,
     }
     source.postMessage(msg, origin)
   }
@@ -85,10 +86,18 @@ export function createHttpServer<ServerHandler extends Record<keyof ServerHandle
       handleRequest(requestId, method, param, origin, source as Window)
     }
   }
-  const messagePingHandler = (data: ServerMessage, origin: string, source: Window) => {
+  const messagePingHandler = (data: ServerMessagePing, origin: string, source: Window) => {
+    if (data[serverMsgTypeKey] !== ServerMsgType.http_ping) {
+      return
+    }
+    const {serverName, requestId} = data
+    if (serverName !== state.name) {
+      return
+    }
+
     if (data[serverMsgTypeKey] === ServerMsgType.http_ping) {
       saveClient(source)
-      const msg: ServerMessage = {[serverMsgTypeKey]: ServerMsgType.http_pong}
+      const msg: ServerMessagePing = {[serverMsgTypeKey]: ServerMsgType.http_ping, requestId, serverName}
       source.postMessage(msg, origin)
     }
   }
@@ -152,20 +161,24 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
     if (!isServerMessage(data)) {
       return
     }
+    const eventKey = getHttpRequestEventKey(data)
     state.event.emit(data[serverMsgTypeKey], data)
+    state.event.emit(eventKey, data)
   })
 
-  const ping = function () {
+  const ping = function (msg: ServerMessagePing) {
     return new Promise((resolve) => {
-      const msg: ServerMessage = {[serverMsgTypeKey]: ServerMsgType.http_ping}
       state.serverWindow.postMessage(msg, '*')
-      state.event.on(ServerMsgType.http_pong, resolve)
+      const eventKey = getHttpRequestEventKey(msg)
+      state.event.removeAllListeners(eventKey)
+      state.event.on(eventKey, resolve)
     })
   }
-  const pingUntilPong = async function() {
+
+  const pingUntilPong = async function(msg: ServerMessagePing) {
     let receivedPong = false
     for (;;) {
-      ping().then(() => {
+      ping(msg).then(() => {
         receivedPong = true
       })
       if (receivedPong) {
@@ -205,7 +218,12 @@ export function createHttpClient<ServerHandler extends Record<keyof ServerHandle
         }, timeout)
       }
       // 先进行 ping, todo 可能需要不断的ping(pingUntilPong), ping 通后再进行 request
-      pingUntilPong().then(() => {
+      const pingMsg = {
+        [serverMsgTypeKey]: ServerMsgType.http_ping,
+        requestId: requestId,
+        serverName: state.name,
+      }
+      pingUntilPong(pingMsg).then(() => {
         if (isFail) {
           return
         }
