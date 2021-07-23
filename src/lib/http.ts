@@ -110,13 +110,9 @@ export function createHttpServer<ServerHandler extends Record<keyof ServerHandle
     messageRequestHandler(data, origin, source as Window)
     messagePingHandler(data, origin, source as Window)
   })
-  const originOnbeforeunload = window.onbeforeunload
-  window.onbeforeunload = function (event) {
+  window.addEventListener('beforeunload', function() {
     emitCloseMsg()
-    if (typeof originOnbeforeunload === 'function') {
-      originOnbeforeunload.call(window, event)
-    }
-  };
+  })
 
   const on = function<Method extends keyof ServerHandler> (method: Method, callback: HandleFnParam<Parameters<ServerHandler[Method]>[0], ReturnType<ServerHandler[Method]>>) {
     const has = state.methodHandler.has(method as string)
