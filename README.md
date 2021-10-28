@@ -1,3 +1,3 @@
 # postmsg-server
 
-ad
+A http/ws-like communication for iframe and popup

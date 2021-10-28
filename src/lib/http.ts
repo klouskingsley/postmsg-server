@@ -59,6 +59,7 @@ export function createHttpServer<ServerHandler extends Record<keyof ServerHandle
     try {
       res.response = await fn(param,origin,source)
     } catch (err) {
+      console.error(err)
       res.error = err.message
     }
 
